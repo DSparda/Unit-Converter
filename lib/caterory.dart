@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hello_flutter/unit.dart';
 import 'package:meta/meta.dart';
 
-import 'Converter Screen.dart';
+import 'converter_screen.dart';
 
 final _rowHeight = 100.0;
 final _borderRadius = BorderRadius.circular(_rowHeight / 2);
@@ -39,6 +39,7 @@ class Caterory extends StatelessWidget {
           backgroundColor: color,
         ),
         body: ConverterScreen(color: color, units: units),
+        resizeToAvoidBottomPadding: false,
       );
     }));
   }
