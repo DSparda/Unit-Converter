@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hello_flutter/unit.dart';
+import 'package:hello_flutter/caterory.dart';
 
 const _padding = EdgeInsets.all(16.0);
 
 class ConverterScreen extends StatefulWidget {
-  final Color color;
-  final List<Unit> units;
+  final Caterory caterory;
 
-  const ConverterScreen({@required this.color, @required this.units})
-      : assert(color != null),
-        assert(units != null);
+  const ConverterScreen({@required this.caterory}) : assert(caterory != null);
 
   @override
   _ConverterScreenState createState() => _ConverterScreenState();
@@ -30,9 +28,18 @@ class _ConverterScreenState extends State<ConverterScreen> {
     _setDefaults();
   }
 
+  @override
+  void didUpdateWidget(ConverterScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.caterory != widget.caterory) {
+      _createDropDownMenuItems();
+      _setDefaults();
+    }
+  }
+
   void _createDropDownMenuItems() {
     var newItems = <DropdownMenuItem>[];
-    for (var unit in widget.units) {
+    for (var unit in widget.caterory.units) {
       newItems.add(DropdownMenuItem(
         value: unit.name,
         child: Container(
@@ -51,8 +58,8 @@ class _ConverterScreenState extends State<ConverterScreen> {
 
   void _setDefaults() {
     setState(() {
-      _fromValue = widget.units[0];
-      _toValue = widget.units[1];
+      _fromValue = widget.caterory.units[0];
+      _toValue = widget.caterory.units[1];
     });
   }
 
@@ -94,7 +101,7 @@ class _ConverterScreenState extends State<ConverterScreen> {
   }
 
   Unit _getUnit(String unitName) {
-    return widget.units.firstWhere(
+    return widget.caterory.units.firstWhere(
       (Unit unit) {
         return unit.name == unitName;
       },
