@@ -1,9 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:hello_flutter/backdrop.dart';
+import 'package:hello_flutter/category_tile.dart';
 import 'package:hello_flutter/caterory.dart';
 import 'package:hello_flutter/unit.dart';
-
-final _backgroundColor = Colors.green[100];
+import 'package:hello_flutter/converter_screen.dart';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen();
@@ -15,6 +15,9 @@ class CategoryScreen extends StatefulWidget {
 class _CategoryScreenState extends State<CategoryScreen> {
   //Note here
   final _categories = <Caterory>[];
+
+  Caterory _defaultCategory;
+  Caterory _currentCategory;
 
   static const _categoryNames = <String>[
     'Length',
@@ -63,14 +66,21 @@ class _CategoryScreenState extends State<CategoryScreen> {
     }),
   ];
 
-  Widget _buildCategoryWidgets() {
-    return OrientationBuilder(builder: (context, orientation) {
-      return GridView.count(
-        crossAxisCount: orientation == Orientation.portrait ? 1 : 2,
-        childAspectRatio: 3.0,
-        children: _categories,
+  @override
+  void initState() {
+    super.initState();
+    for (var i = 0; i < _categoryNames.length; i++) {
+      var category = Caterory(
+        name: _categoryNames[i],
+        color: _baseColors[i],
+        iconLocation: Icons.cake,
+        units: _retrieveUnitList(_categoryNames[i]),
       );
-    });
+      if (i == 0) {
+        _defaultCategory = category;
+      }
+      _categories.add(category);
+    }
   }
 
   List<Unit> _retrieveUnitList(String categoryName) {
@@ -80,36 +90,52 @@ class _CategoryScreenState extends State<CategoryScreen> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    for (var i = 0; i < _categoryNames.length; i++) {
-      _categories.add(Caterory(
-        name: _categoryNames[i],
-        color: _baseColors[i],
-        iconLocation: Icons.cake,
-        units: _retrieveUnitList(_categoryNames[i]),
-      ));
+  void _onCategoryTap(Caterory caterory) {
+    setState(() {
+      _currentCategory = caterory;
+    });
+  }
+
+  Widget _buildCategoryWidgets(Orientation orientation) {
+    if (orientation == Orientation.portrait) {
+      return ListView.builder(
+          itemBuilder: (BuildContext context, int index) {
+            return CategoryTile(
+              caterory: _categories[index],
+              onTap: _onCategoryTap,
+            );
+          },
+          itemCount: _categories.length);
+    } else {
+      return GridView.count(
+          crossAxisCount: 2,
+          childAspectRatio: 3.0,
+          children: _categories.map((Caterory c) {
+            return CategoryTile(
+              caterory: c,
+              onTap: _onCategoryTap,
+            );
+          }).toList());
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final listView = Container(
-        color: _backgroundColor,
-        padding: EdgeInsets.symmetric(horizontal: 8.0),
-        child: _buildCategoryWidgets());
-
-    final appBar = AppBar(
-      elevation: 0.0,
-      title: Text(
-        'Unit Converter',
-        style: TextStyle(color: Colors.black, fontSize: 30),
-      ),
-      centerTitle: true,
-      backgroundColor: _backgroundColor,
+    assert(debugCheckHasMediaQuery(context));
+    final listView = Padding(
+      padding: EdgeInsets.only(left: 8.0, right: 8.0, bottom: 48.0),
+      child: _buildCategoryWidgets(MediaQuery.of(context).orientation),
     );
 
-    return Scaffold(appBar: appBar, body: listView);
+    return Backdrop(
+      currentCategory:
+          _currentCategory == null ? _defaultCategory : _currentCategory,
+      frontPanel: _currentCategory == null
+          ? ConverterScreen(caterory: _defaultCategory)
+          : ConverterScreen(caterory: _currentCategory),
+      backPanel: listView,
+      frontTile: Text('Unit Converter'),
+      backTile: Text('Select a Category'),
+    );
   }
 }
