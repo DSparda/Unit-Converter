@@ -6,6 +6,7 @@ import 'package:hello_flutter/category_tile.dart';
 import 'package:hello_flutter/caterory.dart';
 import 'package:hello_flutter/unit.dart';
 import 'package:hello_flutter/converter_screen.dart';
+import 'package:hello_flutter/api.dart';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen();
@@ -73,6 +74,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     super.didChangeDependencies();
     if (_categories.isEmpty) {
       await _retrieveLocalCategories();
+      await _retrieveApiCategory();
     }
   }
 
@@ -86,7 +88,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     var categoryIndex = 0;
     data.keys.forEach((key) {
       final List<Unit> units =
-          data[key].map<Unit>((dynamic data) => Unit.fromJson(data)).toList();
+      data[key].map<Unit>((dynamic data) => Unit.fromJson(data)).toList();
       var category = Caterory(
           name: key,
           units: units,
@@ -102,6 +104,33 @@ class _CategoryScreenState extends State<CategoryScreen> {
     });
   }
 
+  Future<void> _retrieveApiCategory() async {
+    setState(() {
+      _categories.add(Caterory(
+          name: apiCategory['name'],
+          units: [],
+          color: _baseColors.last,
+          iconLocation: _icons.last));
+    });
+    final api = Api();
+    final jsonUnits = await api.getUnits(apiCategory['route']);
+    if (jsonUnits != null) {
+      final units = <Unit>[];
+      for (var unit in jsonUnits) {
+        units.add(Unit.fromJson(unit));
+      }
+      setState(() {
+        _categories.removeLast();
+        _categories.add(Caterory(
+            name: apiCategory['name'],
+            iconLocation: _icons.last,
+            color: _baseColors.last,
+            units: units
+        ));
+      });
+    }
+  }
+
   void _onCategoryTap(Caterory caterory) {
     setState(() {
       _currentCategory = caterory;
@@ -112,9 +141,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
     if (orientation == Orientation.portrait) {
       return ListView.builder(
           itemBuilder: (BuildContext context, int index) {
+            var _category = _categories[index];
             return CategoryTile(
-              caterory: _categories[index],
-              onTap: _onCategoryTap,
+              caterory: _category,
+              onTap: _category.name == apiCategory['name'] &&
+                  _category.units.isEmpty ? null : _onCategoryTap,
             );
           },
           itemCount: _categories.length);
@@ -146,12 +177,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
     assert(debugCheckHasMediaQuery(context));
     final listView = Padding(
       padding: EdgeInsets.only(left: 8.0, right: 8.0, bottom: 48.0),
-      child: _buildCategoryWidgets(MediaQuery.of(context).orientation),
+      child: _buildCategoryWidgets(MediaQuery
+          .of(context)
+          .orientation),
     );
 
     return Backdrop(
       currentCategory:
-          _currentCategory == null ? _defaultCategory : _currentCategory,
+      _currentCategory == null ? _defaultCategory : _currentCategory,
       frontPanel: _currentCategory == null
           ? ConverterScreen(caterory: _defaultCategory)
           : ConverterScreen(caterory: _currentCategory),
