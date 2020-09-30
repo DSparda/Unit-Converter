@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert' show json, utf8;
 import 'dart:io';
+import 'package:dio/dio.dart';
 
 const apiCategory = {
   'name': 'Currency',
@@ -12,14 +13,13 @@ const apiCategory = {
 };
 
 class Api {
-
   final HttpClient _httpClient = HttpClient();
 
   final String _url = 'flutter.udacity.com';
 
   Future<List> getUnits(String category) async {
     final uri = Uri.https(_url, '/$category');
-    final jsonResponse = await _getJson(uri);
+    final jsonResponse = await _getJsonByDio(uri);
     if (jsonResponse == null || jsonResponse['units'] == null) {
       print('Error retrieving units.');
       return null;
@@ -31,7 +31,7 @@ class Api {
       String category, String amount, String fromUnit, String toUnit) async {
     final uri = Uri.https(_url, '/$category/convert',
         {'amount': amount, 'from': fromUnit, 'to': toUnit});
-    final jsonResponse = await _getJson(uri);
+    final jsonResponse = await _getJsonByDio(uri);
     if (jsonResponse == null || jsonResponse['status'] == null) {
       print('Error retrieving conversion.');
       return null;
@@ -53,6 +53,21 @@ class Api {
       final responseBody = await httpResponse.transform(utf8.decoder).join();
 
       return json.decode(responseBody);
+    } on Exception catch (e) {
+      print('$e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> _getJsonByDio(Uri uri) async {
+    try {
+      Response response;
+      Dio dio = new Dio();
+      response = await dio.getUri(uri);
+      if (response.statusCode != HttpStatus.ok) {
+        return null;
+      }
+      return json.decode(response.data);
     } on Exception catch (e) {
       print('$e');
       return null;
