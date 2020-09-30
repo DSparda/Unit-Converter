@@ -5,7 +5,7 @@ import 'package:meta/meta.dart';
 class Caterory {
   final String name;
   final ColorSwatch color;
-  final IconData iconLocation;
+  final String iconLocation;
   final List<Unit> units;
 
   const Caterory(

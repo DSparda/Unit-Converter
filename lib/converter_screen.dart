@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hello_flutter/api.dart';
 import 'package:hello_flutter/unit.dart';
 import 'package:hello_flutter/caterory.dart';
 
@@ -21,6 +22,7 @@ class _ConverterScreenState extends State<ConverterScreen> {
   List<DropdownMenuItem> _unitMenuItems;
   bool _showValidationError = false;
   final _inputKey = GlobalKey(debugLabel: 'inputText');
+  bool _showErrorUI = false;
 
   @override
   void initState() {
@@ -62,6 +64,9 @@ class _ConverterScreenState extends State<ConverterScreen> {
       _fromValue = widget.caterory.units[0];
       _toValue = widget.caterory.units[1];
     });
+    if (_inputValue == null) {
+      _updateConversion();
+    }
   }
 
   String _format(double conversion) {
@@ -76,11 +81,27 @@ class _ConverterScreenState extends State<ConverterScreen> {
     return outputNum;
   }
 
-  void _updateConversion() {
-    setState(() {
-      _convertedValue =
-          _format(_inputValue * (_toValue.conversion / _fromValue.conversion));
-    });
+  Future<void> _updateConversion() async {
+    if (widget.caterory.name == apiCategory['name']) {
+      final api = Api();
+      final conversion = await api.convert(apiCategory['route'],
+          _inputValue.toString(), _fromValue.name, _toValue.name);
+      if (conversion == null) {
+        setState(() {
+          _showErrorUI = true;
+        });
+      } else {
+        setState(() {
+          _showErrorUI = false;
+          _convertedValue = _format(conversion);
+        });
+      }
+    } else {
+      setState(() {
+        _convertedValue = _format(
+            _inputValue * (_toValue.conversion / _fromValue.conversion));
+      });
+    }
   }
 
   void _updateInputValue(String input) {
@@ -103,7 +124,7 @@ class _ConverterScreenState extends State<ConverterScreen> {
 
   Unit _getUnit(String unitName) {
     return widget.caterory.units.firstWhere(
-      (Unit unit) {
+          (Unit unit) {
         return unit.name == unitName;
       },
       orElse: null,
@@ -142,7 +163,10 @@ class _ConverterScreenState extends State<ConverterScreen> {
               value: currentValue,
               items: _unitMenuItems,
               onChanged: onChanged,
-              style: Theme.of(context).textTheme.headline6,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headline6,
             ),
           ),
         ),
@@ -152,6 +176,39 @@ class _ConverterScreenState extends State<ConverterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.caterory.units == null ||
+        (widget.caterory.name == apiCategory['name'] && _showErrorUI)) {
+      return SingleChildScrollView(
+          child: Container(
+            margin: _padding,
+            padding: _padding,
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.0),
+                color: widget.caterory.color['error']
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 180.0,
+                  color: Colors.white,
+                ),
+                Text(
+                  "Oh no! We can't connect right now",
+                  textAlign: TextAlign.center,
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .headline5
+                      .copyWith(color: Colors.white),
+                )
+              ],
+            ),
+          )
+      );
+    }
     final input = Padding(
       padding: _padding,
       child: Column(
@@ -159,11 +216,17 @@ class _ConverterScreenState extends State<ConverterScreen> {
         children: [
           TextField(
             key: _inputKey,
-            style: Theme.of(context).textTheme.headline4,
+            style: Theme
+                .of(context)
+                .textTheme
+                .headline4,
             decoration: InputDecoration(
-                labelStyle: Theme.of(context).textTheme.headline4,
+                labelStyle: Theme
+                    .of(context)
+                    .textTheme
+                    .headline4,
                 errorText:
-                    _showValidationError ? 'Invalid number entered' : null,
+                _showValidationError ? 'Invalid number entered' : null,
                 labelText: 'Input',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(0.0),
@@ -192,11 +255,17 @@ class _ConverterScreenState extends State<ConverterScreen> {
           InputDecorator(
             child: Text(
               _convertedValue,
-              style: Theme.of(context).textTheme.headline4,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headline4,
             ),
             decoration: InputDecoration(
                 labelText: 'Output',
-                labelStyle: Theme.of(context).textTheme.headline4,
+                labelStyle: Theme
+                    .of(context)
+                    .textTheme
+                    .headline4,
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(0.0))),
           ),
@@ -213,17 +282,17 @@ class _ConverterScreenState extends State<ConverterScreen> {
       padding: _padding,
       child: OrientationBuilder(
           builder: (BuildContext context, Orientation orientation) {
-        if (orientation == Orientation.portrait) {
-          return converter;
-        } else {
-          return Center(
-            child: Container(
-              width: 450,
-              child: converter,
-            ),
-          );
-        }
-      }),
+            if (orientation == Orientation.portrait) {
+              return converter;
+            } else {
+              return Center(
+                child: Container(
+                  width: 450,
+                  child: converter,
+                ),
+              );
+            }
+          }),
     );
   }
 }
